@@ -204,7 +204,11 @@ select * from	PHANCONG
 --12. Đối với từng nv, cho biết họ tên ngày sinh và tên của nv phụ trách trực tiếp nhân viên đó. 
 --13. Ds nv thuộc phòng 5 có tham gia đề án tên là ‘Sản phẩm X’. 
 --14. Tương tự 5, thuộc phòng ‘nghiên cứu’ có tham gia đề án tên là ‘Sản phẩm X’. 
---15. GÁN: Cho biết có tất cả bao nhiêu nhân viên. 
+--15. GÁN: Cho biết có tất cả bao nhiêu nhân viên.
+
+		SELECT COUNT(*) as N'Tổng số nhân viên'
+		FROM nhanvien;
+
 --16. Cho biết mỗi phòng ban có bao nhiêu nhân viên (MAPB, TENPB, SLNV). 
 --17. Cho biết tổng lương, số lượng nv, lương trung bình, lương bé nhất trong toàn công ty. 
 --18. Ds nhân viên có tham gia đề án. 
@@ -253,5 +257,35 @@ select * from	PHANCONG
 			) 
 		AS SOLUONG);
 --34. Cho biết phòng ban nào có đông nhân viên nữ nhất. 
+
+		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, AVG(NHANVIEN.LUONG) AS LUONGTB 
+		FROM PHONGBAN 
+		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
+		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
+		HAVING AVG(NHANVIEN.LUONG) = (
+				SELECT MAX(LUONGTB) 
+				FROM (
+						SELECT AVG(NHANVIEN.LUONG) AS LUONGTB 
+						FROM PHONGBAN 
+						INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
+						GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
+				) 
+		AS LUONGTB);
+
 --35. Danh sách mã, tên của các phòng ban có chủ trì đề án tên là “SPX” lẫn “SPY”.
+
+		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, COUNT(NHANVIEN.MANV) AS SOLUONG 
+		FROM PHONGBAN 
+		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
+		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
+		HAVING COUNT(NHANVIEN.MANV) = (
+				SELECT MIN(SOLUONG) 
+				FROM (
+					SELECT COUNT(NHANVIEN.MANV) AS SOLUONG 
+					FROM PHONGBAN 
+					INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
+					GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
+				) 
+		AS SOLUONG);
+
 
