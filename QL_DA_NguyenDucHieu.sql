@@ -181,53 +181,295 @@ select * from	PHANCONG
 
 
 -------------------------------------------Truy Vấn Cơ SỞ Dữ Liệu SQL--------------------------------------------------------------------------------------
---1. Cho ds nhân viên gồm họ tên, phái. 
+--1. Cho ds nhân viên gồm họ tên, phái.
 
+		SELECT HOVN as N'Họ', TENLOT as N'Tên lót', TENNV as N'Tên nhân viên', PHAI as N'Giới tính' 
+		FROM NHANVIEN;
 
 --2. Cho ds nhân viên thuộc phòng số 5. 
 
+        SELECT * 
+		FROM NHANVIEN 
+		WHERE PHG=5;
 
 --3. Cho ds nhân viên gồm mã nv, họ tên, phái của các nv thuộc phòng số 5. 
 
-
+		SELECT MANV as N'Mã nhân viên', HOVN as N'Họ', TENLOT as N'Tên lót', TENNV as N'Tên nhân viên', PHAI as N'Giới tính' 
+		FROM NHANVIEN 
+		WHERE PHG=5;
 
 --4. Danh sach họ tên phái của các nv thuộc phòng ‘nghiên cứu’. 
 
+		SELECT HOVN as N'Họ', TENLOT as N'Tên lót', TENNV as N'Tên nhân viên', PHAI as N'Giới tính'
+		FROM NHANVIEN 
+		INNER JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG 
+		WHERE PHONGBAN.TENPHG = N'Nghiên cứu';
+
 --5. Cho ds các mã nhân viên có tham gia đề án số 10 hoặc 20. 
 
+		SELECT MA_NVIEN as N'Mã nhân viên'
+		FROM PHANCONG 
+		WHERE MADA = 10 OR MADA = 20;
+
 --6. Cho ds các mã nhân viên vừa có tham gia đề án số 10 vừa có tham gia đề án số 20. 
+
+		SELECT MA_NVIEN as N'Mã nhân viên' 
+		FROM PHANCONG 
+		WHERE MADA = 10 
+		INTERSECT 
+		SELECT MA_NVIEN 
+		FROM PHANCONG 
+		WHERE MADA = 20;
+
 --7. Cho ds các mã nhân viên có tham gia đề án số 10 mà không có tham gia đề án số 20. 
+
+		SELECT MA_NVIEN as N'Mã nhân viên'
+		FROM PHANCONG 
+		WHERE MADA = 10 
+		EXCEPT 
+		SELECT MA_NVIEN 
+		FROM PHANCONG 
+		WHERE MADA = 20;
+
 --8. Cho biết danh sách thể hiện mọi nhân viên đều tham gia tất cả các đề án. 
+
+		SELECT NHANVIEN.MANV as N'Mã nhân viên', NHANVIEN.HOVN as N'Họ', NHANVIEN.TENLOT as N'Tên lót', NHANVIEN.TENNV as N'Tên nhân viên'
+		FROM NHANVIEN
+		JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+		GROUP BY NHANVIEN.MANV, NHANVIEN.HOVN, NHANVIEN.TENLOT, NHANVIEN.TENNV
+		HAVING COUNT(DISTINCT PHANCONG.MADA) = (
+			SELECT COUNT(*) 
+			FROM DEAN
+		);
+
+
 --9. Cho ds các nhân viên và thông tin phòng ban mà nhân viên đó trực thuộc (mã nv, họ tên, mã phòng, tên phòng). 
+
+		SELECT NHANVIEN.MANV as N'Mã nhân viên', NHANVIEN.HOVN as N'Họ', NHANVIEN.TENLOT as N'Tên lót', NHANVIEN.TENNV as N'Tên nhân viên', PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban'
+		FROM NHANVIEN 
+		INNER JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG;
+
+
 --10. Cho ds các phòng ban và địa điểm phòng ban (mã pb, tên pb, địa điểm) 
+
+		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', DIADIEM_PHG.DIADIEM as N'Địa điểm' 
+		FROM PHONGBAN 
+		INNER JOIN DIADIEM_PHG ON PHONGBAN.MAPHG = DIADIEM_PHG.MAPHG;
+
 --11. Cho danh sách các nhân viên thuộc phòng ‘Nghiên cứu’. 
+
+		SELECT * 
+		FROM NHANVIEN 
+		INNER JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG 
+		WHERE PHONGBAN.TENPHG = N'Nghiên cứu';
+
 --12. Đối với từng nv, cho biết họ tên ngày sinh và tên của nv phụ trách trực tiếp nhân viên đó. 
---13. Ds nv thuộc phòng 5 có tham gia đề án tên là ‘Sản phẩm X’. 
---14. Tương tự 5, thuộc phòng ‘nghiên cứu’ có tham gia đề án tên là ‘Sản phẩm X’. 
+
+		SELECT N1.HOVN as N'Họ', N1.TENLOT as N'Tên lót', N1.TENNV as N'Tên nhân viên', N1.NGSINH as N'Ngày sinh', N2.HOVN as 'Họ NV Phụ trách', N2.TENLOT as 'Tên Lót NV Phụ trách', N2.TENNV as 'Tên NV Phụ trách'
+		FROM NHANVIEN N1
+		INNER JOIN NHANVIEN N2 ON N1.MA_NQL = N2.MANV;
+
+
+--13. Ds nv thuộc phòng 5 có tham gia đề án tên là ‘Sản phẩm X’.
+
+		SELECT NHANVIEN.*
+		FROM NHANVIEN
+		INNER JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+		INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+		WHERE NHANVIEN.PHG = 5 AND DEAN.TENDA = N'Sản phẩm X';
+
+
+--14. Tương tự 5, thuộc phòng ‘nghiên cứu’ có tham gia đề án tên là ‘Sản phẩm X’.
+
+		SELECT NHANVIEN.*
+		FROM NHANVIEN
+		INNER JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+		INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+		INNER JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		WHERE PHONGBAN.TENPHG = N'Nghiên cứu' AND DEAN.TENDA = N'Sản phẩm X';
+
+
 --15. GÁN: Cho biết có tất cả bao nhiêu nhân viên.
 
 		SELECT COUNT(*) as N'Tổng số nhân viên'
 		FROM nhanvien;
 
 --16. Cho biết mỗi phòng ban có bao nhiêu nhân viên (MAPB, TENPB, SLNV). 
+
+		SELECT MAPHG as N'Mã phòng ban', TENPHG as N'Tên phòng ban', COUNT(*) AS N'Số lượng nhân viên'
+		FROM NHANVIEN
+		INNER JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG;
+
 --17. Cho biết tổng lương, số lượng nv, lương trung bình, lương bé nhất trong toàn công ty. 
---18. Ds nhân viên có tham gia đề án. 
+
+		SELECT SUM(LUONG) AS 'Tổng lương', COUNT(*) AS N'Số lượng nhân viên', AVG(LUONG) AS N'Lương trung bình', MIN(LUONG) AS N'Lương thấp nhất'
+		FROM NHANVIEN;
+
+--18. Ds nhân viên có tham gia đề án.
+
+		SELECT DISTINCT NHANVIEN.*
+		FROM NHANVIEN
+		INNER JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN;
+
 --19. Ds nhân viên không có tham gia đề án nào. 
+
+		SELECT *
+		FROM NHANVIEN
+		WHERE MANV NOT IN (
+			SELECT DISTINCT MA_NVIEN 
+			FROM PHANCONG
+		);
+
 --20. Mỗi nv tham gia bao nhiêu đề án với tổng thời gian là bao nhiêu. 
+
+		SELECT MA_NVIEN as N'Mã nhân viên', COUNT(MADA) AS N'Số đề án', SUM(THOIGIAN) AS N'Tổng thời gian'
+		FROM PHANCONG
+		GROUP BY MA_NVIEN;
+
 --21. Ds nv có tham gia đề án tên là ‘Sản phẩm X ’ hoặc ‘Sản phẩm Y’. 
---22. Ds nv vừa có tham gia đề án tên ‘Sản phẩm X’ vừa có tham gia đề án ‘Sản phẩm Y’. 
---23. Ds nv có tham gia đề án tên ‘Sản phẩm X’ mà không có tham gia đề án tên là ‘Sản phẩm Y’. 
+
+		SELECT DISTINCT NHANVIEN.*
+		FROM NHANVIEN
+		INNER JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+		INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+		WHERE DEAN.TENDA = N'Sản phẩm X' OR DEAN.TENDA = N'Sản phẩm Y';
+
+--22. Ds nv vừa có tham gia đề án tên ‘Sản phẩm X’ vừa có tham gia đề án ‘Sản phẩm Y’.
+
+		SELECT *
+		FROM NHANVIEN 
+		WHERE MANV IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG 
+            INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+            WHERE DEAN.TENDA = N'Sản phẩm X'
+		)
+		AND MANV IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG
+            INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+            WHERE DEAN.TENDA = N'Sản phẩm Y'
+		);
+
+--23. Ds nv có tham gia đề án tên ‘Sản phẩm X’ mà không có tham gia đề án tên là ‘Sản phẩm Y’.
+
+		SELECT *
+		FROM NHANVIEN 
+		WHERE MANV IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG
+            INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+            WHERE DEAN.TENDA = N'Sản phẩm X'
+		)
+		AND MANV NOT IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG
+        	INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+            WHERE DEAN.TENDA = N'Sản phẩm Y'
+		);
+
 --24. Ds nv chỉ có tham gia đề án tên ‘Sản phẩm X’. 
+
+		SELECT *
+		FROM NHANVIEN 
+		WHERE MANV IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG
+            INNER JOIN DEAN ON PHANCONG.MADA = DEAN.MADA
+            WHERE DEAN.TENDA = N'Sản phẩm X'
+		)
+		AND MANV NOT IN (
+			SELECT MA_NVIEN 
+			FROM PHANCONG
+            INNER JOIN DEAN ON PHANCONG.MADA != DEAN.MADA
+            WHERE DEAN.TENDA != N'Sản phẩm X'
+		);
+
 --25. Ds các đề án chỉ do các nv thuộc phòng “Nghiên cứu” thực hiện. 
---26. Ds các nv có tham gia tất cả các đề án. Bài tập Cơ sở dữ liệu 2 
---27. Ds nv thuộc phòng ‘Nghiên cứu’ có tham gia tất cả các đề án do phòng số 5 chủ trì. 
+
+		SELECT DEAN.*
+		FROM DEAN
+		WHERE MADA NOT IN (
+			SELECT DISTINCT MADA 
+			FROM PHANCONG
+            WHERE MA_NVIEN IN (
+				SELECT MANV 
+				FROM NHANVIEN 
+				WHERE PHG != (
+					SELECT MAPHG 
+					FROM PHONGBAN 
+					WHERE TENPHG = N'Nghiên cứu'
+				)
+			)
+		);
+
+
+--26. Ds các nv có tham gia tất cả các đề án.
+
+		SELECT NHANVIEN.*
+		FROM NHANVIEN
+		WHERE MANV NOT IN (
+			SELECT DISTINCT MANV 
+    		FROM NHANVIEN
+    		JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+    		WHERE PHANCONG.MADA NOT IN (
+				SELECT DISTINCT MADA 
+        		FROM DEAN
+    		)
+		);
+
+--27. Ds nv thuộc phòng ‘Nghiên cứu’ có tham gia tất cả các đề án do phòng số 5 chủ trì.
+
+		SELECT NHANVIEN.*
+		FROM NHANVIEN
+		JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		WHERE PHONGBAN.TENPHG = N'Nghiên cứu' AND MANV NOT IN (
+			SELECT DISTINCT MANV 
+    		FROM NHANVIEN
+    		JOIN PHANCONG ON NHANVIEN.MANV = PHANCONG.MA_NVIEN
+    		WHERE PHANCONG.MADA NOT IN (
+				SELECT DISTINCT MADA 
+        		FROM DEAN
+        		WHERE PHONG = 5
+    		)
+		);
+
 --28. Cho biết lương trung bình của các phòng ban (mã, tên, lương TB). 
+
+		SELECT MAPHG as N'Mã phòng', TENPHG as N'Tên phòng', AVG(LUONG) AS N'Lương trung bình'
+		FROM NHANVIEN
+		JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		GROUP BY MAPHG, TENPHG;
+
 --29. Cho biết các phòng ban có lương trung bình > 2500. 
---30. Cho biết các phòng ban có chủ trì đề án có số nhân viên > 3 và có lương trung bình lớn hơn 2500. 
+
+		SELECT MAPHG as N'Mã phòng', TENPHG as N'Tên phòng', AVG(LUONG) AS N'Lương trung bình'
+		FROM NHANVIEN
+		JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		GROUP BY MAPHG, TENPHG
+		HAVING AVG(LUONG) > 2500;
+
+
+--30. Cho biết các phòng ban có chủ trì đề án có số nhân viên > 3 và có lương trung bình lớn hơn 2500.
+
+		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', AVG(NHANVIEN.LUONG) AS N'Lương trung bình', COUNT(DISTINCT PHANCONG.MA_NVIEN) AS N'Số lượng nhân viên'
+		FROM PHONGBAN
+		JOIN DEAN ON PHONGBAN.MAPHG = DEAN.PHONG
+		JOIN PHANCONG ON DEAN.MADA = PHANCONG.MADA
+		JOIN NHANVIEN ON PHANCONG.MA_NVIEN = NHANVIEN.MANV
+		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
+		HAVING COUNT(DISTINCT PHANCONG.MA_NVIEN) > 3 AND AVG(NHANVIEN.LUONG) > 2500;
+
 --31. Cho biết nhân viên nào có lương cao nhất trong từng phòng ban. 
+
+		SELECT PHG as N'Phòng ban', MAX(LUONG)  as N'Lương cao nhất'
+		FROM NHANVIEN
+		GROUP BY PHG;
+
 --32. Cho biết phòng ban nào có lương trung bình cao nhất. 
 
-		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, AVG(NHANVIEN.LUONG) AS LUONGTB 
+		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', AVG(NHANVIEN.LUONG) AS N'Lương trung bình'
 		FROM PHONGBAN 
 		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
 		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
@@ -241,9 +483,16 @@ select * from	PHANCONG
 			) 
 		AS LUONGTB);
 
+		--Cách 2:
+		SELECT TOP(1) MAPHG as N'Phòng ban', AVG(LUONG) AS 'Lương trung bình cao nhất'
+		FROM NHANVIEN
+		JOIN PHONGBAN ON NHANVIEN.PHG = PHONGBAN.MAPHG
+		GROUP BY MAPHG
+		ORDER BY AVG(LUONG) DESC
+
 --33. Cho biết phòng ban nào có ít nhân viên nhất. 
 
-		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, COUNT(NHANVIEN.MANV) AS SOLUONG 
+		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', COUNT(NHANVIEN.MANV) AS N'Số lượng'
 		FROM PHONGBAN 
 		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
 		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
@@ -256,9 +505,16 @@ select * from	PHANCONG
 				GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
 			) 
 		AS SOLUONG);
+
+		--Cách 2:
+		SELECT TOP(1) PHG as N'Phòng ban', COUNT(MANV) AS 'SoLuongNhanVien'
+		FROM NHANVIEN
+		GROUP BY PHG
+		ORDER BY SoLuongNhanVien ASC
+
 --34. Cho biết phòng ban nào có đông nhân viên nữ nhất. 
 
-		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, AVG(NHANVIEN.LUONG) AS LUONGTB 
+		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', AVG(NHANVIEN.LUONG) AS N'Lương trung bình' 
 		FROM PHONGBAN 
 		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
 		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
@@ -272,20 +528,23 @@ select * from	PHANCONG
 				) 
 		AS LUONGTB);
 
+		--cách 2:
+		SELECT TOP(1) PHG N'Phòng ban', COUNT(MANV) AS 'SoLuongNhanVienNu'
+		FROM NHANVIEN
+		WHERE PHAI = N'Nữ'
+		GROUP BY PHG
+		ORDER BY SoLuongNhanVienNu DESC
+
+
 --35. Danh sách mã, tên của các phòng ban có chủ trì đề án tên là “SPX” lẫn “SPY”.
 
-		SELECT PHONGBAN.MAPHG, PHONGBAN.TENPHG, COUNT(NHANVIEN.MANV) AS SOLUONG 
-		FROM PHONGBAN 
-		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
-		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
-		HAVING COUNT(NHANVIEN.MANV) = (
-				SELECT MIN(SOLUONG) 
-				FROM (
-					SELECT COUNT(NHANVIEN.MANV) AS SOLUONG 
-					FROM PHONGBAN 
-					INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
-					GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
-				) 
-		AS SOLUONG);
+		SELECT DISTINCT PHONGBAN.MAPHG as N'Phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban'
+		FROM PHONGBAN
+		JOIN DEAN ON PHONGBAN.MAPHG = DEAN.PHONG
+		WHERE DEAN.TENDA IN (N'Sản Phẩm X', N'Sản Phẩm Y')
+		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
+		HAVING COUNT(DISTINCT DEAN.TENDA) = 2;
+
+
 
 
