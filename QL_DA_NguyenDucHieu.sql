@@ -514,27 +514,11 @@ select * from	PHANCONG
 
 --34. Cho biết phòng ban nào có đông nhân viên nữ nhất. 
 
-		SELECT PHONGBAN.MAPHG as N'Mã phòng ban', PHONGBAN.TENPHG as N'Tên phòng ban', AVG(NHANVIEN.LUONG) AS N'Lương trung bình' 
-		FROM PHONGBAN 
-		INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
-		GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG 
-		HAVING AVG(NHANVIEN.LUONG) = (
-				SELECT MAX(LUONGTB) 
-				FROM (
-						SELECT AVG(NHANVIEN.LUONG) AS LUONGTB 
-						FROM PHONGBAN 
-						INNER JOIN NHANVIEN ON PHONGBAN.MAPHG = NHANVIEN.PHG 
-						GROUP BY PHONGBAN.MAPHG, PHONGBAN.TENPHG
-				) 
-		AS LUONGTB);
-
-		--cách 2:
 		SELECT TOP(1) PHG N'Phòng ban', COUNT(MANV) AS 'SoLuongNhanVienNu'
 		FROM NHANVIEN
 		WHERE PHAI = N'Nữ'
 		GROUP BY PHG
 		ORDER BY SoLuongNhanVienNu DESC
-
 
 --35. Danh sách mã, tên của các phòng ban có chủ trì đề án tên là “SPX” lẫn “SPY”.
 
