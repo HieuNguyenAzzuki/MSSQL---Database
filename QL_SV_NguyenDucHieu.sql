@@ -1,4 +1,4 @@
-﻿---@Author By HieuNguyenDuc NTTU----------------------------------------------------------------
+﻿---@Author By HieuNguyenDuc NTTU------------------------------------------------------------------------------------------------
 
 ---Định dạng ngày, tháng, năm
 SET DATEFORMAT DMY
@@ -655,11 +655,12 @@ use db_QLSV;
 
 ---28. Cho biết khoa có 3 sinh viên nam trở lên, thông tin gồm có: Mã khoa, Tên khoa, Tổng số sinh viên nam
 
-		SELECT Khoa.makh as N'Mã khoa', Khoa.tenkh as N'Tên khoa', COUNT(CASE WHEN sinhvien.phai = 1 THEN 1 END) as N'Tổng số sinh viên Nam'
-		FROM khoa
-		JOIN sinhvien ON Khoa.makh = sinhvien.makh
-		GROUP BY Khoa.makh, Khoa.tenkh
-		HAVING COUNT(CASE WHEN Sinhvien.phai = 1 THEN 1 END) >= 3
+		SELECT Khoa.makh as N'Mã khoa', Khoa.tenkh as N'Tên khoa', COUNT(SinhVien.Masv) AS N'Tổng số sinh viên Nam'
+		FROM KHOA
+		JOIN SinhVien ON KHOA.MAKH = SinhVien.Makh
+		WHERE SinhVien.Phai = 1
+		GROUP BY KHOA.MAKH, KHOA.TENKH
+		HAVING COUNT(SinhVien.Masv) >= 3
 
 ---29. Danh sách những sinh viên có trung bình điểm thi lớn hơn 4, gồm các thông tin sau: Họ tên sinh viên, Tên khoa, Giới tính, Điểm trung bình các môn
 
@@ -815,5 +816,302 @@ use db_QLSV;
 			  FROM SinhVien 
 			  WHERE makh = SinhVien.makh
 		);
+
+
+-----------------------------Sử dụng cấu trúc điều khiển--------------------------------------------------------------------------------------------------------------------------------------------
+
+----Sử dụng cú pháp IF để thực hiện các yêu cầu sau:
+
+--1. Cho biết học bổng trung bình của SV khoa Tin Học là bao nhiêu? 
+--Nếu lớn hơn 100,000 thì in ra “không tăng học bổng”, ngược lại in ra “nên tăng học bổng”.
+
+		DECLARE @AvgHocbong FLOAT;
+		SELECT @AvgHocbong = AVG(Hocbong) 
+		FROM SINHVIEN 
+		INNER JOIN khoa ON sinhvien.makh = khoa.makh
+		WHERE TENKH = N'Tin học';
+		IF @AvgHocbong > 100000
+			PRINT N'không tăng học bổng'
+		ELSE
+			PRINT N'nên tăng học bổng';
+		GO
+--2. Sử dụng hàm DATENAME để tính xem có SV nào sinh vào ngày chủ nhật không? 
+--Nếu có thì in ra danh sách các SV đó, ngược lại thì in ra chuỗi “Không có SV nào sinh vào ngày Chủ Nhật”.
+
+		DECLARE @TongSinhVienSinhVaoChuNhat INT;
+		SELECT @TongSinhVienSinhVaoChuNhat = COUNT(*)
+		FROM sinhvien
+		WHERE DATENAME(WEEKDAY, ngaysinh) = 'Sunday';
+
+		IF @TongSinhVienSinhVaoChuNhat > 0		
+			SELECT *
+			FROM sinhvien
+			WHERE DATENAME(WEEKDAY, ngaysinh) = 'Sunday';
+		ELse 
+			PRINT N'Không có sinh viên nào sinh vào ngày chủ nhật';
+		GO
+
+--3. Hãy cho biết SV có mã số A01 đã thi bao nhiêu môn, nếu có thì in ra “SV A01 đã thi xxx môn”, 
+--ngược lại thì in ra “SV A01 chưa có kết quả thi”.
+
+		DECLARE @TongSinhVien INT;
+		SELECT @TongSinhVien = COUNT(*)
+		FROM ketqua
+		WHERE masv = 'A01'
+
+		IF @TongSinhVien > 0
+			PRINT N'Sinh viên A01 đã thi ' + CONVERT(varchar, @TongSinhVien) + ' môn' 
+		ELSE
+			PRINT N'Sinh viên chưa có kết quả thi';
+		GO
+--4. Hãy cho biết SV có mã số A01 đã thi đủ tất cả các môn chưa, nếu có thì in ra “SV A01 đã thi đủ tất cả các môn”, 
+--ngược lại thì in ra “SV A01 chưa thi đủ tất cả các môn”.
+
+		DECLARE @TongMonHoc INT, @SinhVienDaThiTatCaCacMon INT;
+		SELECT @TongMonHoc = COUNT(*) 
+		FROM MonHoc;
+		SELECT @SinhVienDaThiTatCaCacMon = COUNT(
+			DISTINCT Mamh
+		) 
+		FROM KetQua 
+		WHERE Masv = 'A01';
+
+		IF @TongMonHoc = @SinhVienDaThiTatCaCacMon
+			PRINT N'SV A01 đã thi đủ tất cả các môn'
+		ELSE
+			PRINT N'SV A01 chưa thi đủ tất cả các môn';
+		GO
+
+--5. Hãy cho biết môn Vật lý nguyên tử đã có SV thi chưa, 
+--nếu có thì in ra “Đã có SV thi môn Vật lý nguyên tử với điểm trung bình là xxx”, 
+--ngược lại thì in ra “Chưa có SV thi môn Vật lý nguyên tử”.
+
+		DECLARE @DiemTrungBinh FLOAT;
+		SELECT  @DiemTrungBinh = AVG(Diem) 
+		FROM KetQua  
+		INNER JOIN MonHoc ON ketqua.mamh = monhoc.mamh 
+		WHERE Tenmh = N'Vật lý nguyên tử';
+
+		IF @DiemTrungBinh IS NOT NULL
+			PRINT N'Đã có SV thi môn Vật lý nguyên tử với điểm trung bình là ' + CONVERT(VARCHAR,  @DiemTrungBinh)
+		ELSE
+			PRINT N'Chưa có SV thi môn Vật lý nguyên tử';
+		GO
+
+----Sử dụng cú pháp CASE để thực hiện các yêu cầu sau:
+
+---6. Liệt kê danh sách các SV có bổ sung thêm cột hiển thị thứ trong tuần (bằng tiếng Việt) của ngày sinh.
+
+		SELECT  masv as N'Mã sinh viên', hosv+ ' '+tensv as N'Họ và tên sinh viên', NgaySinh as N'Ngày sinh', 
+		CASE 
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 1 THEN N'Chủ Nhật'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 2 THEN N'Thứ Hai'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 3 THEN N'Thứ Ba'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 4 THEN N'Thứ Tư'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 5 THEN N'Thứ Năm'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 6 THEN N'Thứ Sáu'
+			WHEN DATEPART(WEEKDAY, NgaySinh) = 7 THEN N'Thứ Bảy'
+		END AS N'Thứ trong tuần'
+		FROM SinhVien;
+		GO
+
+----Sử dụng cú pháp WHILE để thực hiện các yêu cầu sau:
+
+---7. Tính tổng các số nguyên từ 1 đến 100.
+
+		DECLARE @TongCacSoNguyen INT = 0;
+		DECLARE @Dem INT = 1;
+		WHILE @Dem <= 100
+		BEGIN
+    		SET @TongCacSoNguyen = @TongCacSoNguyen + @Dem;
+    		SET @TongCacSoNguyen = @Dem + 1;
+		END
+		SELECT @TongCacSoNguyen AS N'Tổng các số nguyên từ 1 đến 100';
+		GO	
+
+---8. Tính tổng chẵn và tổng lẻ của các số nguyên từ 1 đến 100.
+
+		DECLARE @TongChan INT = 0, @TongLe INT = 0;
+		DECLARE @Dem INT = 1;
+		WHILE @Dem <= 100
+		BEGIN
+    		IF @Dem % 2 = 0
+        		SET @TongChan = @TongChan + @Dem;
+    		ELSE
+        		SET @TongLe = @TongLe + @Dem;
+    		SET @Dem = @Dem + 1;
+		END
+		SELECT @TongChan AS N'Tổng các số chẵn từ 1 đến 100', 
+       		   @TongLe AS N'Tổng các số lẻ từ 1 đến 100';
+		GO
+
+---9. Tạo một bảng tên MONHOC_1 có cấu trúc và dữ liệu dựa vào bảng MONHOC (chỉ lấy hai cột: MAMH, TENMH). 
+--Sau đó, sử dụng vòng lặp WHILE viết đoạn chương trình dùng để xóa từng dòng dữ liệu trong bảng MONHOC_1 
+--với điều kiện câu lệnh bên trong vòng lặp khi mỗi lần thực hiện chỉ được phép xóa một dòng dữ liệu trong bảng MONHOC_1. 
+--Sau khi xóa một dòng thì thông báo ra màn hình nội dung “Đã xóa môn học ” + Tên môn học
+
+        SELECT MAMH, TENMH  INTO MONHOC_1
+		FROM MONHOC;
+
+		WHILE (SELECT COUNT(*) FROM MONHOC_1) > 0
+		BEGIN
+    		DECLARE @MonHoc nvarchar(100);
+    		SELECT TOP (1) @MonHoc = TENMH 
+			FROM MONHOC_1;
+    		DELETE FROM MONHOC_1 WHERE TENMH = @MonHoc;
+    		PRINT N'Đã xóa môn học ' + @MonHoc;
+		END
+		GO
+
+----Sử dụng đối tượng Cursor:
+
+---6. Duyệt cursor và xử lý hiển thị danh sách các SV gồm các thông tin: mã SV, họ tên SV, mã khoa, 
+--và có thêm cột tổng số môn thi.
+
+		DECLARE @MaSinhVien nvarchar(10), @HoVaTenSinhVien nvarchar(50), @MaKhoa nvarchar(10), @TongSoMonThi int;
+		DECLARE SinhVien_Cursor CURSOR FOR 
+		SELECT MASV, HOSV + ' ' + TENSV, MAKH 
+		FROM SinhVien;
+		OPEN SinhVien_Cursor
+		FETCH NEXT 
+		FROM SinhVien_Cursor 
+		INTO @MaSinhVien, @HoVaTenSinhVien, @MaKhoa
+		WHILE @@Fetch_Status = 0
+		BEGIN
+    		SELECT @TongSoMonThi = COUNT(*) 
+			FROM KetQua 
+			WHERE Masv = @MaSinhVien;
+    		PRINT @MaSinhVien + ' - ' + @HoVaTenSinhVien + ' - ' + @MaKhoa + ' - ' + CAST(@TongSoMonThi AS nvarchar);
+    		FETCH NEXT FROM SinhVien_Cursor INTO @MaSinhVien, @HoVaTenSinhVien, @MaKhoa
+		END
+		CLOSE SinhVien_Cursor
+		DEALLOCATE SinhVien_Cursor
+		GO
+
+---7. Duyệt cursor và xử lý hiển thị danh sách các môn học có thêm cột Ghi chú, 
+--biết rằng nếu đã có SV thi thì in ra “Đã có xxx SV thi”, ngược lại thì in ra “Chưa có SV thi”.
+
+		DECLARE @MaMonHoc nvarchar(10), @TenMonHoc nvarchar(50), @GhiChu nvarchar(100);
+		DECLARE MonHoc_Cursor CURSOR FOR 
+		SELECT MAMH, TENMH 
+		FROM MONHOC;
+		OPEN MonHoc_Cursor
+		FETCH NEXT FROM MonHoc_Cursor INTO @MaMonHoc, @TenMonHoc
+		WHILE @@Fetch_Status = 0
+		BEGIN
+    		DECLARE @SinhVienThi int;
+    		SELECT @SinhVienThi = COUNT(
+				DISTINCT MASV
+			) 
+			FROM KETQUA 
+			WHERE MAMH = @MaMonHoc;
+    		IF @SinhVienThi > 0
+        		SET @GhiChu = N'Đã có ' + CAST(@SinhVienThi AS nvarchar) + ' SV thi'
+    		ELSE
+        		SET @GhiChu = N'Chưa có SV thi'
+    		PRINT @MaMonHoc + ' - ' + @TenMonHoc + ' - ' + @GhiChu;
+    		FETCH NEXT FROM MonHoc_Cursor INTO @MaMonHoc, @TenMonHoc
+		END
+		CLOSE MonHoc_Cursor
+		DEALLOCATE MonHoc_Cursor
+		GO
+---8. Duyệt cursor và xử lý giảm học bổng của các SV theo các qui tắc sau:
+-- - Không giảm nếu ĐTB ≥ 8.5
+-- - Giảm 5% nếu 7.5 ≤ ĐTB < 8.5
+-- - Giảm 10% nếu 7 ≤ ĐTB < 7.5
+
+		DECLARE @MaSinhVien nvarchar(10), @HocBong money, @DiemTrungBinh float;
+		DECLARE SinhVien_Cursor CURSOR FOR 
+		SELECT MASV, HOCBONG, (
+			SELECT AVG(DIEM) 
+			FROM KETQUA 
+			WHERE MASV = SINHVIEN.MASV
+		) AS DTB 
+		FROM SINHVIEN;
+		OPEN SinhVien_Cursor
+		FETCH NEXT FROM SinhVien_Cursor INTO @MaSinhVien, @HocBong, @DiemTrungBinh
+		WHILE @@Fetch_Status = 0
+		BEGIN
+    		IF @DiemTrungBinh < 7.5 AND @DiemTrungBinh >= 7
+        		SET @HocBong = @HocBong - @HocBong * 0.1
+    		ELSE IF @DiemTrungBinh < 8.5 AND @DiemTrungBinh >= 7.5
+        		SET @HocBong = @HocBong - @HocBong * 0.05
+   		 	UPDATE SinhVien SET HocBong = @HocBong 
+			WHERE MASV = @MaSinhVien;
+    		FETCH NEXT FROM SinhVien_Cursor INTO @MaSinhVien, @HocBong, @DiemTrungBinh
+		END
+		CLOSE SinhVien_Cursor
+		DEALLOCATE SinhVien_Cursor
+		GO
+		---Xem kết quả thay đổi---
+		SELECT MASV, HOSV, TENSV, HOCBONG 
+		FROM SINHVIEN;
+		GO
+
+-----------------------------Sử dụng Stored Procedure--------------------------------------------------------------------------------------------------------------------------------------------
+
+---1. Xây dựng Stored Procedure tên sp_KetQuaThi với tham số vào là mã số SV (giá trị mặc định là NULL) 
+--để hiển thị thông tin: Mã SV, Họ và tên, Tên môn và Điểm. Nếu không truyền vào mã số SV thì 
+--thủ tục sẽ liệt kê kết quả thi của tất cả các sinh viên.
+
+		CREATE PROCEDURE sp_KetQuaThi 
+    		@MASV VARCHAR(50) = NULL
+		AS
+		BEGIN
+    		SELECT SINHVIEN.MASV, SINHVIEN.HOSV, SINHVIEN.TENSV, MONHOC.TENMH, KETQUA.DIEM 
+    		FROM SINHVIEN 
+    		JOIN KETQUA ON SINHVIEN.MASV = KETQUA.MASV 
+    		JOIN MONHOC ON KETQUA.MAMH = MONHOC.MAMH 
+    		WHERE SINHVIEN.MASV = ISNULL(@MASV, SINHVIEN.MASV);
+		END;
+		GO
+---2. Xây dựng Stored Procedure tên sp_TongHocBongSVTheoKhoa với tham số vào là 
+--Tên khoa để tính tổng học bổng của các sinh viên thuộc khoa đó. Nếu Tên khoa không hợp lệ thì thông báo lỗi.
+
+		CREATE PROCEDURE sp_TongHocBongSVTheoKhoa 
+    		@TENKHOA NVARCHAR(100)
+		AS
+		BEGIN
+    		IF NOT EXISTS (
+				SELECT (1) 
+				FROM KHOA 
+				WHERE TENKH = @TENKHOA)
+        		PRINT N'Tên khoa không hợp lệ'
+    		ELSE
+    		BEGIN
+       		 	SELECT SUM(SINHVIEN.HOCBONG) as N'Tổng học bổng'
+       		 	FROM SINHVIEN
+       		 	JOIN KHOA ON SINHVIEN.MAKH = KHOA.MAKH
+       		 	WHERE KHOA.TENKH = @TENKHOA;
+    		END
+		END;
+		GO
+---3. Xây dựng Stored Procedure tên sp_DTB để tính điểm trung bình với 2 tham số vào là mã môn học và mã khoa.		
+
+        CREATE PROCEDURE sp_DTB 
+    		@MAMH VARCHAR(50), 
+    		@MAKHOA VARCHAR(50)
+		AS
+		BEGIN
+    		SELECT AVG(KETQUA.DIEM) as 'Điểm trung bình'
+    		FROM KETQUA 
+    		JOIN SINHVIEN ON KETQUA.MASV = SINHVIEN.MASV
+    		WHERE KETQUA.MAMH = @MAMH AND SINHVIEN.MAKH = @MAKHOA;
+		END;
+
+
+
+---@Author By HieuNguyenDuc NTTU------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 
 
