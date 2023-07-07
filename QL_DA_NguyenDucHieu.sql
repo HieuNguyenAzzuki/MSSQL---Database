@@ -1,6 +1,9 @@
 ﻿set dateformat dmy
-create database QuanLyDeAn
-use QuanLyDeAn
+
+create database QL_DA
+
+use QL_DA
+
 Create	table NHANVIEN
 (
 	HOVN	nvarchar(15),
