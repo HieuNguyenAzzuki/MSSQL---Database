@@ -829,7 +829,7 @@ use QL_SV;
 --Nếu lớn hơn 100,000 thì in ra “không tăng học bổng”, ngược lại in ra “nên tăng học bổng”.
 
 		DECLARE @AvgHocbong FLOAT;
-		SELECT @AvgHocbong = AVG(Hocbong) 
+		SELECT @AvgHocbong = AVG(ISNULL(Hocbong, 0)) 
 		FROM SINHVIEN 
 		INNER JOIN khoa ON sinhvien.makh = khoa.makh
 		WHERE TENKH = N'Tin học';
@@ -927,7 +927,7 @@ use QL_SV;
 		WHILE @Dem <= 100
 		BEGIN
     		SET @TongCacSoNguyen = @TongCacSoNguyen + @Dem;
-    		SET @TongCacSoNguyen = @Dem + 1;
+    		SET @Dem = @Dem + 1;
 		END
 		SELECT @TongCacSoNguyen AS N'Tổng các số nguyên từ 1 đến 100';
 		GO	
@@ -953,9 +953,11 @@ use QL_SV;
 --với điều kiện câu lệnh bên trong vòng lặp khi mỗi lần thực hiện chỉ được phép xóa một dòng dữ liệu trong bảng MONHOC_1. 
 --Sau khi xóa một dòng thì thông báo ra màn hình nội dung “Đã xóa môn học ” + Tên môn học
 
+		--- Tạo một bảng MONHOC_1
         SELECT MAMH, TENMH  INTO MONHOC_1
 		FROM MONHOC;
-
+		---
+		--- Vòng lặp WHILE để xóa từng dữ liệu
 		WHILE (SELECT COUNT(*) FROM MONHOC_1) > 0
 		BEGIN
     		DECLARE @MonHoc nvarchar(100);
@@ -965,6 +967,7 @@ use QL_SV;
     		PRINT N'Đã xóa môn học ' + @MonHoc;
 		END
 		GO
+		---
 
 ----Sử dụng đối tượng Cursor:
 
@@ -1018,6 +1021,7 @@ use QL_SV;
 		CLOSE MonHoc_Cursor
 		DEALLOCATE MonHoc_Cursor
 		GO
+
 ---8. Duyệt cursor và xử lý giảm học bổng của các SV theo các qui tắc sau:
 -- - Không giảm nếu ĐTB ≥ 8.5
 -- - Giảm 5% nếu 7.5 ≤ ĐTB < 8.5
