@@ -1311,11 +1311,11 @@ use QL_SV;
 		AS
 		BEGIN
 			SELECT
-				@SoMonDau = ISNULL(COUNT(CASE WHEN KQ.Diem >= 5 THEN 1 END),0),
-				@SoMonRot = ISNULL(COUNT(CASE WHEN KQ.Diem < 5 THEN 1 END),0)
-			FROM SinhVien SV
-			LEFT JOIN KetQua KQ ON SV.Masv = KQ.Masv
-			WHERE SV.Masv = @Masv;
+				@SoMonDau = ISNULL(COUNT(CASE WHEN KetQua.Diem >= 5 THEN 1 END),0),
+				@SoMonRot = ISNULL(COUNT(CASE WHEN KetQua.Diem < 5 THEN 1 END),0)
+			FROM SinhVien
+			LEFT JOIN KetQua ON SinhVien.Masv = KetQua.Masv
+			WHERE SinhVien.Masv = @Masv;
 		END;
 		GO
 
@@ -1493,19 +1493,18 @@ use QL_SV;
 
 ---7. Xây dựng thủ tục sp_CapNhatMH_KyTuDau(@kytudau) có sử dụng hàm fn_DTB_MH để cập nhật lại số tiết trong bảng MONHOC cho các môn học mà tên có ký tự đầu là “T”.
 
-		CREATE PROCEDURE sp_CapNhatMH_KyTuDau(@kytudau NVARCHAR(1))
+		CREATE PROCEDURE sp_CapNhatMH_KyTuDau
+			@kytudau NVARCHAR(1)
 		AS
 		BEGIN
-    		UPDATE MONHOC
-    		SET SOTIET = CASE
-        		WHEN dbo.fn_DTB_MH(MAMH) < 5 THEN SOTIET + 10
-        		WHEN dbo.fn_DTB_MH(MAMH) BETWEEN 5 AND 7 THEN SOTIET + 5
-        		ELSE SOTIET
-    		END
-    		WHERE LEFT(TENMH, 1) = @kytudau
-		END
-		GO
-		EXEC sp_CapNhatMH_KyTuDau 'T'
+			SET NOCOUNT ON;
+
+			UPDATE MonHoc
+			SET SoTiet = ROUND(dbo.fn_DTB_MH(Mamh) / 2, 0)
+			WHERE SUBSTRING(Tenmh, 1, 1) = @kytudau;
+		END;
+
+		EXEC sp_CapNhatMH_KyTuDau 'A'
 		GO
 
 
@@ -1518,8 +1517,8 @@ use QL_SV;
 
 ---8. Xây dựng hàm fn_DanhSachSinhVien_DTB(@makh) trả về danh sách các SV của mã khoa truyền vào, gồm các thông tin: mã SV, họ tên SV, ĐTB.
 
-		CREATE FUNCTION fn_DanhSachSinhVien_DTB(@makh NVARCHAR(10))
-		RETURNS @result TABLE 
+		CREATE FUNCTION fn_DanhSachSinhVien_DTB(@MaKhoa NVARCHAR(10))
+		RETURNS @KetQua TABLE 
 		(
     		MASV NVARCHAR(10),
     		HOTEN NVARCHAR(50),
@@ -1527,11 +1526,11 @@ use QL_SV;
 		)
 		AS
 		BEGIN
-    		INSERT INTO @result (MASV, HOTEN, DTB)
+    		INSERT INTO @KetQua (MASV, HOTEN, DTB)
     		SELECT SINHVIEN.MASV, SINHVIEN.Hosv+Tensv, AVG(KETQUA.DIEM) AS DTB
     		FROM SINHVIEN
     		INNER JOIN KETQUA ON SINHVIEN.MASV = KETQUA.MASV
-    		WHERE SINHVIEN.MAKH = @makh
+    		WHERE SINHVIEN.MAKH = @MaKhoa
     		GROUP BY SINHVIEN.MASV, SINHVIEN.Hosv+Tensv
 
     		RETURN
