@@ -979,9 +979,7 @@ use QL_SV;
 		SELECT MASV, HOSV + ' ' + TENSV, MAKH 
 		FROM SinhVien;
 		OPEN SinhVien_Cursor
-		FETCH NEXT 
-		FROM SinhVien_Cursor 
-		INTO @MaSinhVien, @HoVaTenSinhVien, @MaKhoa
+		FETCH NEXT FROM SinhVien_Cursor INTO @MaSinhVien, @HoVaTenSinhVien, @MaKhoa
 		WHILE @@Fetch_Status = 0
 		BEGIN
     		SELECT @TongSoMonThi = COUNT(*) 
@@ -1027,47 +1025,31 @@ use QL_SV;
 -- - Giảm 5% nếu 7.5 ≤ ĐTB < 8.5
 -- - Giảm 10% nếu 7 ≤ ĐTB < 7.5
 
-		--- Khai báo biến
-		DECLARE @MaSinhVien nvarchar(3), @DiemTrungBinh FLOAT, @HocBong money
 
-		--- Khai báo Cursor
+		DECLARE @MaSinhVien nvarchar(3), @DiemTrungBinh FLOAT, @HocBong money
 		DECLARE student_cursor CURSOR FOR 
-		--- Tìm ra mã sinh viên, điểm gán cho biến DTB và học bổng sinh viên từ bảng sinh viên
 		SELECT MASV, ISNULL(Hocbong, 0) as HocBong, (
 			SELECT ISNULL(AVG(Diem), 0) 
 			FROM KETQUA 
 			WHERE MASV = SINHVIEN.MASV
 		) AS DTB 
 		FROM SINHVIEN;
-		--- Mở Cursor
 		OPEN student_cursor
-		--- Tìm dòng tiếp theo
 		FETCH NEXT FROM student_cursor INTO @MaSinhVien, @DiemTrungBinh, @HocBong
-		--- Vòng lặp mặc định trạng thái là 0, nếu trạng thái không phải là 0 thì vẫn tiếp tục chạy
 		WHILE @@FETCH_STATUS = 0  
 		BEGIN  
-			--- Nếu điểm trung bình lớn hơn hoặc bằng 8.5
     		IF @DiemTrungBinh >= 8.5 
-        		SET @HocBong = @HocBong -- Không thay đổi
-			--- Nếu điểm trung bình lớn hơn hoặc bằng 7.5 hoặc nhỏ hơn 8.5
+        		SET @HocBong = @HocBong 
     		ELSE IF @DiemTrungBinh >= 7.5 AND @DiemTrungBinh < 8.5
-        		SET @HocBong = @HocBong * 0.95 -- Giảm 5%
-			--- Nếu điểm trung bình lớn hơn hoặc bằng 7 và nhỏ hơn 7.5 
+        		SET @HocBong = @HocBong * 0.95 
     		ELSE IF @DiemTrungBinh >= 7 AND @DiemTrungBinh < 7.5
-        		SET @HocBong = @HocBong * 0.90 -- Giảm 10%
+        		SET @HocBong = @HocBong * 0.90
 
-			--- Cập nhật dữ liệu mới cho bản
     		UPDATE SinhVien
-			--- Gán học bổng đã cập nhật vào cột học bổng trong bảng sinh viên
     		SET HocBong = @HocBong
-			--- Điều kiện cập nhật là dựa vào mã sinh viên để xác định cập nhật cho chính xác
     		WHERE MaSV = @MaSinhVien
-			--- Tìm dòng tiếp theo cho đến khi kết thúc
     		FETCH NEXT FROM student_cursor INTO @MaSinhVien, @DiemTrungBinh, @HocBong
 		END 
-		--- Thoát vóng lặp 
-
-		--- Thoát Cursor
 		CLOSE student_cursor
 		DEALLOCATE student_cursor
 		GO
@@ -1118,7 +1100,7 @@ use QL_SV;
     		@MASV VARCHAR(20) = NULL
 		AS
 		BEGIN
-    		SELECT SINHVIEN.MASV, SINHVIEN.HOSV, SINHVIEN.TENSV, MONHOC.TENMH, KETQUA.DIEM 
+    		SELECT SINHVIEN.MASV, SINHVIEN.HOSV+ ' '+ TENSV, MONHOC.TENMH, KETQUA.DIEM 
     		FROM SINHVIEN 
     		JOIN KETQUA ON SINHVIEN.MASV = KETQUA.MASV 
     		JOIN MONHOC ON KETQUA.MAMH = MONHOC.MAMH 
@@ -1181,7 +1163,8 @@ use QL_SV;
     		SELECT AVG(KETQUA.DIEM) as N'Điểm trung bình'
     		FROM KETQUA 
     		JOIN SINHVIEN ON KETQUA.MASV = SINHVIEN.MASV
-    		WHERE KETQUA.MAMH = @MAMH AND SINHVIEN.MAKH = @MAKHOA;
+    		WHERE KETQUA.MAMH = @MAMH AND 
+			      SINHVIEN.MAKH = @MAKHOA;
 		END;
 		GO
 
@@ -1195,12 +1178,9 @@ use QL_SV;
     		@MAKHOA NVARCHAR(5)
 		AS
 		BEGIN
-    		SELECT 
-        		SINHVIEN.MASV,
-        		SINHVIEN.HOSV,
-        		SINHVIEN.TENSV,
+    		SELECT MASV, HOSV+ ' ' +TENSV,
         		CASE 
-            		WHEN EXISTS (SELECT (1) FROM KETQUA WHERE KETQUA.MASV = SINHVIEN.MASV) 
+            		WHEN EXISTS (SELECT * FROM KETQUA WHERE KETQUA.MASV = SINHVIEN.MASV) 
 					THEN N'Đã thi ' + CAST((SELECT COUNT(*) FROM KETQUA WHERE KETQUA.MASV = SINHVIEN.MASV) AS NVARCHAR(10)) + ' môn'
             		ELSE 
                 		N'Chưa có kết quả thi'
@@ -1225,13 +1205,13 @@ use QL_SV;
     		@MAKHOA NVARCHAR(5)
 		AS
 		BEGIN
-    		IF EXISTS (SELECT 1 FROM SINHVIEN WHERE MASV = @MASV) 
+    		IF EXISTS (SELECT * FROM SINHVIEN WHERE MASV = @MASV) 
     		BEGIN
         		PRINT N'Mã SV đã tồn tại'
         		RETURN
     		END
 
-    		IF NOT EXISTS (SELECT 1 FROM KHOA WHERE MAKH = @MAKHOA) 
+    		IF NOT EXISTS (SELECT * FROM KHOA WHERE MAKH = @MAKHOA) 
     		BEGIN
         		PRINT N'Mã khoa không hợp lệ'
         		RETURN
@@ -1239,7 +1219,6 @@ use QL_SV;
 
     		INSERT INTO SINHVIEN(MASV, HOSV, TENSV,PHAI, NgaySinh, NoiSinh, MAKH)
     		VALUES(@MASV, @HOSV, @TENSV,@GIOITINH,@NGAYSINH, @NOISINH, @MAKHOA)
-
     		PRINT N'Thêm sinh viên thành công'
 		END;
 		GO
@@ -1254,7 +1233,7 @@ use QL_SV;
     		@MASV NVARCHAR(50)
 		AS
 		BEGIN
-    		IF NOT EXISTS (SELECT 1 FROM SINHVIEN WHERE MASV = @MASV) 
+    		IF NOT EXISTS (SELECT * FROM SINHVIEN WHERE MASV = @MASV) 
     		BEGIN
         		PRINT N'Mã SV không tồn tại'
         		RETURN
@@ -1277,13 +1256,13 @@ use QL_SV;
     		@MAKHOA NVARCHAR(50)
 		AS
 		BEGIN
-    		IF NOT EXISTS (SELECT 1 FROM SINHVIEN WHERE MASV = @MASV) 
+    		IF NOT EXISTS (SELECT * FROM SINHVIEN WHERE MASV = @MASV) 
     		BEGIN
         		PRINT N'Mã SV không tồn tại'
         		RETURN
     		END
 
-    		IF NOT EXISTS (SELECT 1 FROM KHOA WHERE MAKH = @MAKHOA) 
+    		IF NOT EXISTS (SELECT * FROM KHOA WHERE MAKH = @MAKHOA) 
     		BEGIN
         		PRINT N'Mã khoa không hợp lệ'
         		RETURN
@@ -1292,10 +1271,10 @@ use QL_SV;
     		UPDATE SINHVIEN
     		SET HOSV = @HOSV, TENSV = @TENSV, MAKH = @MAKHOA
     		WHERE MASV = @MASV
-
     		PRINT N'Cập nhật thông tin sinh viên thành công'
 		END;
-			GO
+		GO
+
 		EXECUTE sp_Sua_SV 'A01', N'Nguyễn Thu', N'Hải', 'AV'
 		GO
 		--- Kiểm tra thay đổi sinh viên sau khi đã chỉnh sửa
@@ -1305,40 +1284,48 @@ use QL_SV;
 ---8. Xây dựng Stored Procedure tên sp_DTB_SV để tính điểm trung bình của sinh viên với tham số vào 
 --là mã sinh viên và tham số ra là điểm trung bình của sinh viên có mã sinh viên trùng với mã sinh viên truyền vào.
 
-		CREATE PROCEDURE sp_DTB_SV 
-    		@MASV NVARCHAR(50),
-    		@DTB DECIMAL(5, 2) OUTPUT
+		CREATE PROCEDURE sp_DTB_SV
+			@Masv VARCHAR(3),
+			@DiemTrungBinh FLOAT OUT
 		AS
 		BEGIN
-    		SELECT @DTB = AVG(DIEM) 
-    		FROM KETQUA 
-    		WHERE MASV = @MASV
+			SELECT @DiemTrungBinh = COALESCE(SUM(Ketqua.Diem * Monhoc.SoTiet) / NULLIF(SUM(Monhoc.SoTiet), 0), 0)
+			FROM SinhVien 
+			INNER JOIN KetQua ON Sinhvien.Masv = Ketqua.Masv
+			INNER JOIN MonHoc ON Ketqua.Mamh = Monhoc.Mamh
+			WHERE Sinhvien.Masv = @Masv;
 		END;
 		GO
-		EXECUTE sp_DTB_SV  'A01', ''
-		GO
 
-		
+		DECLARE @DiemTrungBinh FLOAT;
+		EXEC sp_DTB_SV @Masv = 'A01', @DiemTrungBinh = @DiemTrungBinh OUT;
+		PRINT N'Điểm trung bình của sinh viên A01 là: ' + CAST(@DiemTrungBinh AS VARCHAR);
+
 ---9. Xây dựng Stored Procedure tên sp_SoMonDauRot để tính số môn đậu, số môn rớt của sinh viên với tham số vào 
 --là mã sinh viên, 2 tham số ra là số môn đậu và số môn rớt của sinh viên có mã sinh viên trùng với mã sinh viên truyền vào.		
 
 		CREATE PROCEDURE sp_SoMonDauRot
-    		@MASV NVARCHAR(50),
-    		@SoMonDau INT OUTPUT,
-    		@SoMonRot INT OUTPUT
+			@Masv VARCHAR(3),
+			@SoMonDau INT OUT,
+			@SoMonRot INT OUT
 		AS
 		BEGIN
-    		SELECT @SoMonDau = COUNT(*)
-    		FROM KETQUA
-    		WHERE MASV = @MASV AND DIEM >= 5.0
-
-    		SELECT @SoMonRot = COUNT(*)
-    		FROM KETQUA
-    		WHERE MASV = @MASV AND DIEM < 5.0
+			SELECT
+				@SoMonDau = ISNULL(COUNT(CASE WHEN KQ.Diem >= 5 THEN 1 END),0),
+				@SoMonRot = ISNULL(COUNT(CASE WHEN KQ.Diem < 5 THEN 1 END),0)
+			FROM SinhVien SV
+			LEFT JOIN KetQua KQ ON SV.Masv = KQ.Masv
+			WHERE SV.Masv = @Masv;
 		END;
 		GO
-		EXECUTE sp_SoMonDauRot 'A01', '', ''
+
+		DECLARE @SoMonDau INT, @SoMonRot INT;
+		EXEC sp_SoMonDauRot @Masv = 'A01', @SoMonDau = @SoMonDau OUT, @SoMonRot = @SoMonRot OUT;
+		PRINT N'Số môn đậu của sinh viên A01 là: ' + CAST(@SoMonDau AS VARCHAR);
+		PRINT N'Số môn rớt của sinh viên A01 là: ' + CAST(@SoMonRot AS VARCHAR);
 		GO
+
+
 -----------------------------Sử dụng FUNCTION--------------------------------------------------------------------------------------------------------------------------------------------
 
 ---1. Xây dựng hàm fn_TongHaiSoNguyen(@so1, @so2) trả về tổng  của hai số nguyên.
@@ -1377,7 +1364,7 @@ use QL_SV;
 		END
 		GO
 				--- Dùng PRINT ---
-		IF dbo.fn_TongDaySoNguyen(5) >0
+		IF dbo.fn_TongDaySoNguyen(5) > 0
 			PRINT dbo.fn_TongDaySoNguyen(5)
 		ELSE 
 			PRINT '...'
@@ -1403,6 +1390,9 @@ use QL_SV;
 		END
 		GO
 
+		PRINT dbo.fn_SoNT(2)
+		GO
+
 ---4. Xây dựng hàm fn_CacSoNT(@n) trả về chuỗi các số nguyên tố  nằm trong khoảng từ 2 đến n.
 
 		CREATE FUNCTION fn_CacSoNT(@n INT)
@@ -1420,6 +1410,8 @@ use QL_SV;
     		RETURN @result
 		END
 		GO
+		PRINT dbo.fn_CacSoNT(12)
+		GO
 
 ---5. Xây dựng hàm fn_DTB_MH(@mamh) trả về điểm TB của môn học có mã số truyền vào.
 
@@ -1435,7 +1427,7 @@ use QL_SV;
 		PRINT N'Điểm trung bình của môn là: ' + CONVERT(nvarchar(10),dbo.fn_DTB_MH('01')) + N' điểm'
 		GO
 
-		--Cách 2
+		---Cách 2
 
 		CREATE FUNCTION fn_DTB_MH_2(@mamh NVARCHAR(10))
 		RETURNS DECIMAL(5, 2)
@@ -1448,6 +1440,8 @@ use QL_SV;
     		)
 		END
 		GO
+		PRINT dbo.fn_DTB_MH_2('01')
+		GO
 
 ---6. Xây dựng thủ tục sp_CapNhatMH có sử dụng hàm fn_DTB_MH để cập nhật lại số tiết trong bảng MONHOC theo các qui tắc sau:
 -- • Tăng 10 tiết nếu ĐTB của SV học dưới 5.
@@ -1458,7 +1452,7 @@ use QL_SV;
 		AS
 			IF @MaMH IS NULL
 			BEGIN
-				PRINT N'Chưa có mã môn học'
+				PRINT N'Không có mã môn học nào như thế !'
 				RETURN
 			END
 			DECLARE @DTB INT, @STT INT 
@@ -1475,11 +1469,13 @@ use QL_SV;
 			PRINT N'Đã cập nhật'
 			
 		GO
-		SELECT *, dbo.fn_DTB_MH('01')
+		SELECT *, dbo.fn_DTB_MH('03')
 		FROM MonHoc
-		WHERE Mamh = '01'
-		EXECUTE sp_CapNhatMH '01'
+		WHERE Mamh = '03'
+		EXECUTE sp_CapNhatMH '03'
 		GO
+
+
 		--- Cách 2
 		CREATE PROCEDURE sp_CapNhatMH(@MaMH varchar(10))
 		AS
@@ -1492,7 +1488,7 @@ use QL_SV;
     		END
 		END
 		GO
-		PRINT sp_CapNhatMH('01')
+		EXECUTE sp_CapNhatMH '01'
 		GO
 
 ---7. Xây dựng thủ tục sp_CapNhatMH_KyTuDau(@kytudau) có sử dụng hàm fn_DTB_MH để cập nhật lại số tiết trong bảng MONHOC cho các môn học mà tên có ký tự đầu là “T”.
@@ -1508,6 +1504,16 @@ use QL_SV;
     		END
     		WHERE LEFT(TENMH, 1) = @kytudau
 		END
+		GO
+		EXEC sp_CapNhatMH_KyTuDau 'T'
+		GO
+
+
+
+
+		SELECT Tenmh, SoTiet
+		FROM MonHoc 
+		WHERE LEFT(TENMH, 1) = 'T'
 		GO
 
 ---8. Xây dựng hàm fn_DanhSachSinhVien_DTB(@makh) trả về danh sách các SV của mã khoa truyền vào, gồm các thông tin: mã SV, họ tên SV, ĐTB.
@@ -1585,6 +1591,8 @@ use QL_SV;
     		WHERE KETQUA.MAMH = @mamh
 		)
 		GO
+		SELECT * FROM dbo.fn_DSKhoa_ThiMon('02')
+		GO
 
 ---12. Xây dựng hàm fn_DSKhoa_ThiMon_Diem(@mamh) để lọc danh sách khoa có SV đã thi môn học với mã môn truyền vào, gồm các
 --thông tin: mã khoa, tên khoa, điểm thi cao nhất, điểm thi thấp nhất và ĐTB.
@@ -1610,6 +1618,8 @@ use QL_SV;
 
     		RETURN
 		END
+		GO
+		SELECT * FROM dbo.fn_DSKhoa_ThiMon_Diem('01')
 		GO
 
 ---13. Xây dựng hàm fn_LocDSSV_CapNhatHB(@makh) để lọc danh sách SV (gồm các thông tin: mã SV, họ tên SV, học bổng mới) của
@@ -1644,7 +1654,7 @@ use QL_SV;
     		RETURN
 		END
 		GO
-		SELECT * FROM dbo.fn_LocDSSV_CapNhatHB('AV')
+		SELECT * FROM dbo.fn_LocDSSV_CapNhatHB('TH')
 		GO
 
 ---14. Xây dựng hàm fn_LocDSMH_CapNhatSoTiet để lọc danh sách môn học (gồm các thông tin: mã MH, tên MH, ĐTB thi của SV, số tiết cũ,
@@ -1672,12 +1682,18 @@ use QL_SV;
         		WHEN AVG_DIEM >= 7 THEN SOTIET + 10
     		END
     		FROM MONHOC
-    		LEFT JOIN (SELECT MAMH, AVG(DIEM) AS AVG_DIEM FROM KETQUA GROUP BY MAMH) AS KQ
+    		LEFT JOIN (SELECT MAMH, ISNULL(AVG(DIEM), 0) AS AVG_DIEM FROM KETQUA GROUP BY MAMH) AS KQ
     		ON MONHOC.MAMH = KQ.MAMH
 
     		RETURN
 		END
 		GO
+		SELECT *FROM dbo.fn_LocDSMH_CapNhatSoTiet()
+		GO
+
+
+
+
 
 
 
